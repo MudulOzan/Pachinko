@@ -8,7 +8,13 @@
 import SpriteKit
 
 class GameScene: SKScene, SKPhysicsContactDelegate {
+	var fontName = "Chalkduster"
+	var ballColors = ["Blue", "Cyan", "Green", "Grey", "Purple", "Red", "Yellow"]
 	var scoreLabel: SKLabelNode!
+	var isGameOver = false
+	
+	var gameOverLabel: SKLabelNode!
+	var startGameLabel: SKLabelNode!
 	
 	var score = 0 {
 		didSet {
@@ -28,6 +34,23 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		}
 	}
 	
+	var ballsLabel: SKLabelNode!
+	
+	var ballsInScene = 0 {
+		didSet {
+			if ballsInScene <= 0 && balls <= 0 {
+				isGameOver = true
+				gameOver()
+			}
+		}
+	}
+	var balls = 5 {
+		didSet {
+			ballsLabel.text = "Balls: \(balls)"
+		}
+		
+	}
+	
 	override func didMove(to view: SKView) {
 		let background = SKSpriteNode(imageNamed: "background")
 		background.position = CGPointMake(512, 384)
@@ -35,16 +58,22 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		background.zPosition = -1
 		addChild(background)
 		
-		scoreLabel = SKLabelNode(fontNamed: "Chalkduster")
+		scoreLabel = SKLabelNode(fontNamed: fontName)
 		scoreLabel.text = "Score: 0"
 		scoreLabel.horizontalAlignmentMode = .right
 		scoreLabel.position = CGPointMake(980, 700)
 		addChild(scoreLabel)
 		
-		editLabel = SKLabelNode(fontNamed: "Chalkduster")
+		editLabel = SKLabelNode(fontNamed: fontName)
 		editLabel.text = "Edit"
 		editLabel.position = CGPointMake(80, 700)
 		addChild(editLabel)
+		
+		ballsLabel = SKLabelNode(fontNamed: fontName)
+		ballsLabel.text = "Balls: 5"
+		ballsLabel.horizontalAlignmentMode = .right
+		ballsLabel.position = CGPointMake(980, 655)
+		addChild(ballsLabel)
 		
 		physicsBody = SKPhysicsBody(edgeLoopFrom: frame)
 		physicsWorld.contactDelegate = self
@@ -74,20 +103,54 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				let box = SKSpriteNode(color: UIColor(red: CGFloat.random(in: 0...1), green: CGFloat.random(in: 0...1), blue: CGFloat.random(in: 0...1), alpha: 1), size: size)
 				box.zRotation = CGFloat.random(in: 0...3)
 				box.position = location
+				box.name = "box"
 				
 				box.physicsBody = SKPhysicsBody(rectangleOf: box.size)
 				box.physicsBody?.isDynamic = false
 				addChild(box)
 			} else {
-				let ball = SKSpriteNode(imageNamed: "ballRed")
-				ball.physicsBody = SKPhysicsBody(circleOfRadius: ball.size.width / 2)
-				ball.physicsBody?.restitution = 0.4
-				ball.physicsBody?.contactTestBitMask = ball.physicsBody?.collisionBitMask ?? 0
-				ball.position = location
-				ball.name = "ball"
-				addChild(ball)
+				if balls > 0 {
+					let ball = SKSpriteNode(imageNamed: "ball\(ballColors.randomElement()!)")
+					ball.physicsBody = SKPhysicsBody(circleOfRadius: ball.size.width / 2)
+					ball.physicsBody?.restitution = 0.4
+					ball.physicsBody?.contactTestBitMask = ball.physicsBody?.collisionBitMask ?? 0
+					ball.position = CGPoint(x: location.x, y: 768)
+					ball.name = "ball"
+					addChild(ball)
+					balls -= 1
+					ballsInScene += 1
+				}
+				if isGameOver {
+					if objects.contains(startGameLabel) {
+						for child in self.children {
+							print(child)
+							if child.name == "box" || child.name == "gameOver" {
+								child.removeFromParent()
+							}
+						}
+						score = 0
+						balls = 5
+						isGameOver = false
+					}
+				}
 			}
 		}
+	}
+	
+	func gameOver() {
+		gameOverLabel = SKLabelNode(fontNamed: fontName)
+		gameOverLabel.text = "Game Over"
+		gameOverLabel.fontColor = .red
+		gameOverLabel.position = CGPointMake(512, 400)
+		gameOverLabel.name = "gameOver"
+		addChild(gameOverLabel)
+		
+		let startGamePos = CGPointMake(512, 350)
+		startGameLabel = SKLabelNode(fontNamed: fontName)
+		startGameLabel.text = "Start New Game"
+		startGameLabel.position = startGamePos
+		startGameLabel.name = "gameOver"
+		addChild(startGameLabel)
 	}
 	
 	func makeBouncer(at position: CGPoint) {
@@ -130,9 +193,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		if object.name == "good" {
 			destroy(ball: ball)
 			score += 1
+			balls += 1
+			ballsInScene -= 1
 		} else if object.name == "bad"{
 			destroy(ball: ball)
 			score -= 1
+			ballsInScene -= 1
+		} else if object.name == "box" {
+			destroy(box: object)
 		}
 	}
 	
@@ -143,6 +211,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		}
 		
 		ball.removeFromParent()
+	}
+	
+	func destroy(box: SKNode) {
+		if let popParticles = SKEmitterNode(fileNamed: "PopParticles") {
+			popParticles.position = box.position
+			addChild(popParticles)
+		}
+		
+		box.removeFromParent()
 	}
 	
 	func didBegin(_ contact: SKPhysicsContact) {
@@ -156,3 +233,4 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		}
 	}
 }
+
