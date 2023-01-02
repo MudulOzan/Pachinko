@@ -70,7 +70,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			editingMode.toggle()
 		} else {
 			if editingMode {
-				// create boxe
 				let size = CGSize(width: Int.random(in: 16...128), height: 16)
 				let box = SKSpriteNode(color: UIColor(red: CGFloat.random(in: 0...1), green: CGFloat.random(in: 0...1), blue: CGFloat.random(in: 0...1), alpha: 1), size: size)
 				box.zRotation = CGFloat.random(in: 0...3)
@@ -138,6 +137,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	}
 	
 	func destroy(ball: SKNode) {
+		if let fireParticles = SKEmitterNode(fileNamed: "FireParticles") {
+			fireParticles.position = ball.position
+			addChild(fireParticles)
+		}
+		
 		ball.removeFromParent()
 	}
 	
